@@ -1,0 +1,102 @@
+## Copyright Mirko Vukovic 2013.
+## Distributed under the Boost Software License, Version 1.0.
+## (See accompanying file ./LICENSE_1_0.txt or copy at
+## http://www.boost.org/LICENSE_1_0.txt)
+
+#+title: Savitzky-Golay filters and convolution vectors
+
+
+
+* Aim
+  This package calculates Savizky-Golay filters and packages them in
+  vectors suitable for convolution
+
+* Method
+  I use the discussion [[http://www.wire.tu-bs.de/OLDWEB/mameyer/cmr/savgol.pdf][Section 14.8]] of Numerical Recipes in C (2nd
+  Edition) to develop the code.  However, instead of using the matrix
+  inverse method as the text and code suggest, I solve for the vector
+  c-n.
+  
+  GSLL is used for linear algebra computations.  There is no reason
+  for not using [[https://github.com/tpapp/lla][LLA]], except that I have not installed that library on
+  my systems.
+
+* Reference
+  - [[http://www.wire.tu-bs.de/OLDWEB/mameyer/cmr/savgol.pdf][Section 14.8]] of Numerical Recipes in C (2nd Edition)
+  - [[http://en.wikipedia.org/wiki/Savitzky%25E2%2580%2593Golay_filter_for_smoothing_and_differentiation][Savitzky-Golay]] Wikipedia entry
+
+* Dictionary
+
+** /Function/ *c-coeffs*
+   :PROPERTIES:
+   :ID:       sf2f72z0c8g0
+   :END:
+
+*** Syntax:
+    *c-coeffs* /n-l n-r m &optional l-d reverse/ => /c-coeffs n-c n-r/
+
+*** Arguments and values
+    - /n-l/ -- non-negative integer
+    - /n-r/ -- non-negative integer
+    - /m/ -- non-negative integer, m >= n-l + n-r
+    - /l-d/ -- non-negative integer, l-d <= m
+    - /reverse/ -- generalized boolean, default /T/
+    - /c-coeffs/ -- list of Savizsky-Golay coefficients
+    - /n-c/ -- non-negative integer, n-c = 1 + n-l + n-r
+
+*** Description
+    Return list of Savitzky-Golay filter coefficients for /n-l/
+    leftward (past) points, /n-r/ rightward (future) points.  /m/ is
+    the order of the polynomial, and /l-d/ the derivative order.
+
+    If /reverse/ is T, the coefficients are returned in reverse
+    order, starting from index /n-r/, /n-r/-1 ,...,1,0,-1,-2,..., -
+    /n-l/.
+
+
+
+** /Function/ *make-convolution-vector*
+
+   :PROPERTIES:
+   :ID:       0uzae6z0c8g0
+   :END:
+*** Syntax:
+    *make-convolution-vector* /n-p c-coeffs n-c n-r/ => /foreign-vector/
+
+*** Arguments and values
+    - /n-p/ -- positive integer, /n-p >= n=c/
+    - /c-coeffs/ -- list of Savitzky Golay coefficients in reverse order
+    - /n-c/ -- positive integer, length of /c-coeffs/
+    - /n-r/ -- non-negative integer
+    - /foreign-vector/ -- A foreign vector of length /n-p/, holding
+      double-floats
+
+*** Description
+    Package Savizky-Golay coefficients provided in C-COEFFS into a
+    foreign vector of length /n-p/ suitable for convolution.  The
+    coefficients are stored in reverse order, meaning the rightward's
+    one are at the end of the vector, and the leftward's ones at the
+    beginning of the vector.
+
+    The values /n-c/ and /n-r/ are returned by a prior call to
+    [[id:sf2f72z0c8g0][c-coeffs]].
+    
+
+** /Function/ *convolution-vector*
+
+*** Syntax:
+    *convolution-vector* /n-p n-p n-l n-r m &optional l-d/ => /foreign-vector/
+
+*** Arguments and values
+    - /n-p/ -- positive integer, /n-p >= n=c/
+    - /n-l/ -- non-negative integer
+    - /n-r/ -- non-negative integer
+    - /m/ -- non-negative integer, m >= n-l + n-r
+    - /l-d/ -- non-negative integer, l-d <= m
+    - /foreign-vector/ -- A foreign vector of length /n-p/, holding
+      double-floats
+
+*** Description
+    Wrapper routine for calls to  [[id:sf2f72z0c8g0][*c-coeffs*]] and
+    [[id:0uzae6z0c8g0][*make-convolution-vector*]].  Given parameters of Savizky-Golay
+    filters, return a vector of length /n-p/ suitable for convolution.
