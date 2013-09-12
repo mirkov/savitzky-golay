@@ -141,13 +141,13 @@ It returns a list of coefficients, starting with index
 
 If REVERSE is T, the coefficients are reversed.  This is useful (and
 required) for building convolution vectors"
-  (assert (>= 0 n-l) ()
+  (assert (>= n-l 0) ()
 	  (error "n-l, ~a, must be zero or positive" n-l))
-  (assert (>= 0 n-r) ()
+  (assert (>= n-r 0) ()
 	  (error "n-r, ~a, must be zero or positive" n-r))
-  (assert (>= 0 m) ()
+  (assert (>= m 0) ()
 	  (error "m, ~a, must be zero or positive" m))
-  (assert (>= 0 l-d) ()
+  (assert (>= l-d 0) ()
 	  (error "l-d, ~a, must be zero or positive" l-d))
   (assert (<= l-d m) ()
 	  (error "l-d, ~a, must be equal to or smaller than m, ~a" l-d m))
@@ -173,7 +173,8 @@ required) for building convolution vectors"
 
 (defun make-convolution-vector (n-p c-coeffs n-c n-r)
   "Store Savitzky-Golay coefficients C-COEFFS in a foreign vector of
-length N-P, in a form suitable for convolution.
+length N-P, in a form suitable for convolution.  Also return (max n-r
+n-l), where n-l is calculated as: n-c - n-r - 1
 
 The Savitzky-Golay coefficients are of length N-C with N-R right
 points (these are values provided by C-COEFFS).
@@ -195,7 +196,7 @@ the vector.  Coefficients  0,-1,-2,...,-n-l are stored at the low end of the vec
     ;; last element of VEC, i.e., at N-P - 1
     (loop :for i :from (- n-r) :below (- n-c n-r)
        :do (setf (aref vec (mod (+ n-p i) n-p)) (pop c-coeffs)))
-    vec))
+    (values vec (max n-r (- n-c n-r 1)))))
 
 (defun convolution-vector (n-p n-l n-r m &optional (l-d 0))
   "Return a Savitzky-Golay filter for polynomial of order M, N-L left

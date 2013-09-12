@@ -1,0 +1,19 @@
+2013-09-12  Mirko Vukovic  <mirko.vukovic@us.tel.com>
+
+	* savitzky-golay.asd (#:savitzky-golay): Added "gram-poly" to
+	component list
+
+	* gram-poly.lisp: New file
+
+2013-09-09  Mirko Vukovic  <mirko.vukovic@us.tel.com>
+
+	* savitzky-golay-coeffs.lisp (c-coeffs): Fixed bugs in assertion
+	tests
+
+2013-09-08  Mirko Vukovic  <mirko.vukovic@us.tel.com>
+
+	* README.org: Updated documentation for make-convolution-vector
+
+	* savitzky-golay-coeffs.lisp (make-convolution-vector): Added
+	additional return value, (max n-l n-r)
+

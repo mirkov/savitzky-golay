@@ -11,11 +11,18 @@
   This package calculates Savizky-Golay filters and packages them in
   vectors suitable for convolution
 
-* Method
+* Methods
+
+  There are two methods to calculate the filter coefficients
+  
   I use the discussion [[http://www.wire.tu-bs.de/OLDWEB/mameyer/cmr/savgol.pdf][Section 14.8]] of Numerical Recipes in C (2nd
   Edition) to develop the code.  However, instead of using the matrix
   inverse method as the text and code suggest, I solve for the vector
   c-n.
+
+  The article by Gorry calculates the coefficients exactly (as
+  rationals) using orthogonal Gram polynomials.  It is restricts the
+  filter length to 2M+1 (with M an integer).
   
   GSLL is used for linear algebra computations.  There is no reason
   for not using [[https://github.com/tpapp/lla][LLA]], except that I have not installed that library on
@@ -24,10 +31,13 @@
 * Reference
   - [[http://www.wire.tu-bs.de/OLDWEB/mameyer/cmr/savgol.pdf][Section 14.8]] of Numerical Recipes in C (2nd Edition)
   - [[http://en.wikipedia.org/wiki/Savitzky%25E2%2580%2593Golay_filter_for_smoothing_and_differentiation][Savitzky-Golay]] Wikipedia entry
+  - Gorry: General Least Squares Smoothing and Differentiation by the
+    Convolution (Savitzky-Golay) Method, Anal.Chem. *1990*, /62/,
+    570-573
 
 * Dictionary
 
-** /Function/ *c-coeffs*
+** /Function/ c-coeffs
    :PROPERTIES:
    :ID:       sf2f72z0c8g0
    :END:
@@ -53,15 +63,13 @@
     order, starting from index /n-r/, /n-r/-1 ,...,1,0,-1,-2,..., -
     /n-l/.
 
-
-
-** /Function/ *make-convolution-vector*
+** /Function/ make-convolution-vector
 
    :PROPERTIES:
    :ID:       0uzae6z0c8g0
    :END:
 *** Syntax:
-    *make-convolution-vector* /n-p c-coeffs n-c n-r/ => /foreign-vector/
+    *make-convolution-vector* /n-p c-coeffs n-c n-r/ => /foreign-vector max-n-l-n-r/
 
 *** Arguments and values
     - /n-p/ -- positive integer, /n-p >= n=c/
@@ -70,6 +78,8 @@
     - /n-r/ -- non-negative integer
     - /foreign-vector/ -- A foreign vector of length /n-p/, holding
       double-floats
+    - /max-n-l-n-r/ -- non-negative integer, larger of /n-l/ and /n-r/
+      - /n-l = n-c - 1 - n-r/
 
 *** Description
     Package Savizky-Golay coefficients provided in C-COEFFS into a
@@ -80,9 +90,11 @@
 
     The values /n-c/ and /n-r/ are returned by a prior call to
     [[id:sf2f72z0c8g0][c-coeffs]].
-    
 
-** /Function/ *convolution-vector*
+    Also return the maximum of /n-l/ and /n-r/, as this will be
+    required for padding the data when doing convolutions.
+    
+** /Function/ convolution-vector
 
 *** Syntax:
     *convolution-vector* /n-p n-p n-l n-r m &optional l-d/ => /foreign-vector/
@@ -100,3 +112,4 @@
     Wrapper routine for calls to  [[id:sf2f72z0c8g0][*c-coeffs*]] and
     [[id:0uzae6z0c8g0][*make-convolution-vector*]].  Given parameters of Savizky-Golay
     filters, return a vector of length /n-p/ suitable for convolution.
+

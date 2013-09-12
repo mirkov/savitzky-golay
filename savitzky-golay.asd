@@ -14,5 +14,6 @@
                #:antik
                #:gsll)
   :components ((:file "savitzky-golay-package-def")
-               (:file "savitzky-golay-coeffs")))
+               (:file "savitzky-golay-coeffs")
+	       (:file "gram-poly")))
 
