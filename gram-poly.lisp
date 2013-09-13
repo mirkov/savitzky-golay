@@ -79,11 +79,11 @@ http://en.wikipedia.org/wiki/Discrete_Chebyshev_polynomials
 			  (= value 1))
 			k0)
 		 "k0 constant")
-    (assert-equal 1 (norm k0 k0 2m+1) "k0 norm")
+    (assert-equal 1 (gram-poly-norm^2 k0 k0 2m+1) "k0 norm")
     (assert-true (zerop (reduce #'+ k1)) "k1 sum")
-    (assert-equal 1 (norm k1 k1 2m+1) "k1 norm")
+    (assert-equal 1 (gram-poly-norm^2 k1 k1 2m+1) "k1 norm, expected to fail")
     (assert-true (zerop (reduce #'+ k2)) "k2 sum")
-    (assert-equal 1 (norm k2 k2 2m+1) "k2 norm")
+    (assert-equal 1 (gram-poly-norm^2 k2 k2 2m+1) "k2 norm, expected to fail")
     (assert-true (zerop (reduce #'+ (mapcar #'* k0 k1))) "k0 ortho k1")
     (assert-true (zerop (reduce #'+ (mapcar #'* k0 k2))) "k0 ortho k2")
     (assert-true (zerop (reduce #'+ (mapcar #'* k1 k2))) "k1 ortho k2")))
@@ -110,85 +110,59 @@ http://en.wikipedia.org/wiki/Discrete_Chebyshev_polynomials
        :do (setf gf (* gf j)))
     gf))
 
-(defun weight (i p m k &optional (s 0))
-  "Calculate weight of the i-th data point for the P-th point.  The
-weight is calcualted for the S-th derivative of polynomial of order k
-over 2M+1 points
-
-All arguments are integers satisfying:
-- |P| <= M
-- |I| <= M
-- M > 0
-- K >= 0
-- S >= 0
-"
+(defmethod weight-1 ((method (eql :gram)) i p m k &optional (s 0))
   ;; Code follows Gurry, Figure I
-  (loop :for k :from 0 :to k
-     :summing (* (+ (* 2 k) 1)
-		 (/ (gen-fact (* 2 m) k)
-		    (gen-fact (+ (* 2 m) k 1) (+ k 1)))
-		 (gram-poly i m k 0)
-		 (gram-poly p m k s))))
+  (loop :for l :from 0 :to k
+     :summing (* (+ (* 2 l) 1)
+		 (/ (gen-fact (* 2 m) l)
+		    (gen-fact (+ (* 2 m) l 1) (+ l 1)))
+		 (gram-poly i m l 0)
+		 (gram-poly p m l s))))
 
-(defun gram-coeffs (p m k &optional (s 0))
-  "Collect point weights for the P-th point for a s-th derivative of
-the fitting polynomial of order k over 2M+1 points
-
-All arguments are integers satisfying:
-- |P| <= M
-- M > 0
-- K >= 0
-- S >= 0
-"
-  (loop for i from (- m) to m
-       :collect (weight i p m k s)))
-
-(define-test gram-coeffs
-  (let ((*epsilon* 1e-15))
-    (assert-numerical-equal
-     (multiple-value-bind (coeffs &rest ignore)
-	 (c-coeffs 2 2 2)
-       (declare (ignore ignore))
-       coeffs)
-     (mapcar (lambda (rational)
-	       (float rational 1.d0)) (gram-coeffs 0 2 2)))))
+(defmethod filter-coeffs-1 ((method (eql :gram)) p m k &optional (s 0) reverse-p)
+  (let ((coeffs (loop for i from (- m) to m
+		   :collect (weight-1 method i p m k s))))
+    (values (if reverse-p (nreverse coeffs) coeffs)
+	    (1+ (* 2 m))
+	    (- m p))))
 
 
 (define-test smoothing-weights/center-point
   "Test output for quadratic smoothing (Table I)"
   ;; test for center point
-  (assert-equal 17/35 (weight 0 0 2 2))
-  (assert-equal 12/35 (weight 1 0 2 2))
-  (assert-equal -3/35 (weight 2 0 2 2)))
+  (assert-equal 17/35 (weight-1 :gram 0 0 2 2))
+  (assert-equal 12/35 (weight-1 :gram 1 0 2 2))
+  (assert-equal -3/35 (weight-1 :gram 2 0 2 2)))
+
 (define-test smoothing-weights/leading-point
   "test for left point (P=-2)"
-  (assert-equal 31/35 (weight -2 -2 2 2))
-  (assert-equal 9/35 (weight -1 -2 2 2))
-  (assert-equal -3/35 (weight 0 -2 2 2))
-  (assert-equal -5/35 (weight 1 -2 2 2))
-  (assert-equal 3/35 (weight 2 -2 2 2)))
+  (assert-equal 31/35 (weight-1 :gram -2 -2 2 2))
+  (assert-equal 9/35 (weight-1 :gram -1 -2 2 2))
+  (assert-equal -3/35 (weight-1 :gram 0 -2 2 2))
+  (assert-equal -5/35 (weight-1 :gram 1 -2 2 2))
+  (assert-equal 3/35 (weight-1 :gram 2 -2 2 2)))
 (define-test smoothing-weights/symmetry
-  (assert-equal (weight -2 -2 2 2) (weight 2 2 2 2))
-  (assert-equal (weight -2 2 2 2) (weight 2 -2 2 2))
-  (assert-equal (weight -2 0 2 2) (weight 2 0 2 2))
-  (assert-equal (weight -1 0 2 2) (weight 1 0 2 2))
-  (assert-equal (weight 0 -2 2 2) (weight 0 2 2 2)))
+  (assert-equal (weight-1 :gram -2 -2 2 2) (weight-1 :gram 2 2 2 2))
+  (assert-equal (weight-1 :gram -2 2 2 2) (weight-1 :gram 2 -2 2 2))
+  (assert-equal (weight-1 :gram -2 0 2 2) (weight-1 :gram 2 0 2 2))
+  (assert-equal (weight-1 :gram -1 0 2 2) (weight-1 :gram 1 0 2 2))
+  (assert-equal (weight-1 :gram 0 -2 2 2) (weight-1 :gram 0 2 2 2)))
 
 (define-test derivative-weights/center-point
   "test for center point"
-  (assert-equal 0 (weight 0 0 2 2 1))
-  (assert-equal -1/10 (weight -1 0 2 2 1))
-  (assert-equal -2/10 (weight -2 0 2 2 1)))
+  (assert-equal 0 (weight-1 :gram 0 0 2 2 1))
+  (assert-equal -1/10 (weight-1 :gram -1 0 2 2 1))
+  (assert-equal -2/10 (weight-1 :gram -2 0 2 2 1)))
 
 (define-test derivative-weights/leading-point
   "test for center point"
-  (assert-equal 40/70 (weight 0 -2 2 2 1))
-  (assert-equal 13/70 (weight -1 -2 2 2 1))
-  (assert-equal -54/70 (weight -2 -2 2 2 1)))
+  (assert-equal 40/70 (weight-1 :gram 0 -2 2 2 1))
+  (assert-equal 13/70 (weight-1 :gram -1 -2 2 2 1))
+  (assert-equal -54/70 (weight-1 :gram -2 -2 2 2 1)))
 
 (define-test derivative-weights/symmetry
-  (assert-equal (- (weight -2 0 2 2 1)) (weight 2 0 2 2 1))
-  (assert-equal (- (weight 0 -2 2 2 1)) (weight 0 2 2 2 1))
-  (assert-equal (- (weight -2 -2 2 2 1)) (weight 2 2 2 2 1))
-  (assert-equal (- (weight -2 2 2 2 1)) (weight 2 -2 2 2 1)))
+  (assert-equal (- (weight-1 :gram -2 0 2 2 1)) (weight-1 :gram 2 0 2 2 1))
+  (assert-equal (- (weight-1 :gram 0 -2 2 2 1)) (weight-1 :gram 0 2 2 2 1))
+  (assert-equal (- (weight-1 :gram -2 -2 2 2 1)) (weight-1 :gram 2 2 2 2 1))
+  (assert-equal (- (weight-1 :gram -2 2 2 2 1)) (weight-1 :gram 2 -2 2 2 1)))
 

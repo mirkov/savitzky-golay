@@ -1,3 +1,36 @@
+2013-09-13  Mirko Vukovic  <mirko.vukovic@us.tel.com>
+
+	* savitzky-golay-package-def.lisp (#:savitzky-golay): Removed
+	import of map-grid-utils symbols
+
+	* savitzky-golay.asd (#:savitzky-golay): Removed dependence on
+	map-grid-utils
+
+	* gram-poly.lisp (weight-1): Fixed up summation index name that
+	got mangled during variable renaming.
+
+	* matrix.lisp (c-n): Renamed n into i, n-l into l, n-r into r
+	(matrix-coeffs): Renamed c-coeffs into matrix-coeffs.  Minor edits
+	to the routine
+	(make-design-matrix, matrix-coeffs): Renamed n-l into l, n-r into r
+	(matrix-coeffs, c-n): Renamed l-d into s
+
+	* convolution-vector.lisp (convolution-vector): Variable renaming,
+	and more code to make it conformal to new naming convention and
+	filter-coeffs
+	(make-convolution-vector): Renamed some variables
+
+	* savitzky-golay.asd (#:savitzky-golay): Added dependency on
+	map-grid-utils
+	(#:savitzky-golay): Added more components due to refactoring
+
+	* savitzky-golay-package-def.lisp (#:savitzky-golay): package uses
+	map-grid-utils
+
+	* matrix.lisp (c-coeffs): Changed variable name m to k
+
+	* README.org: Updating to generalize and include gram-poly
+
 2013-09-12  Mirko Vukovic  <mirko.vukovic@us.tel.com>
 
 	* savitzky-golay.asd (#:savitzky-golay): Added "gram-poly" to

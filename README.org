@@ -3,31 +3,85 @@
 ## (See accompanying file ./LICENSE_1_0.txt or copy at
 ## http://www.boost.org/LICENSE_1_0.txt)
 
-#+title: Savitzky-Golay filters and convolution vectors
+#+title: Savitzky-Golay filter coefficients and convolution vectors
 
 
 
 * Aim
-  This package calculates Savizky-Golay filters and packages them in
-  vectors suitable for convolution
+  Functions in this library calculate Savizky-Golay filter
+  coefficients and package them in foreign vectors suitable for
+  convolution.
 
-* Methods
+* Filter calculation methods
 
-  There are two methods to calculate the filter coefficients
-  
-  I use the discussion [[http://www.wire.tu-bs.de/OLDWEB/mameyer/cmr/savgol.pdf][Section 14.8]] of Numerical Recipes in C (2nd
-  Edition) to develop the code.  However, instead of using the matrix
-  inverse method as the text and code suggest, I solve for the vector
-  c-n.
+  There are two methods to calculate the filter coefficients:
+  - Gram polynomial method
+  - Matrix method
+    
+    
+** Matrix method
 
-  The article by Gorry calculates the coefficients exactly (as
-  rationals) using orthogonal Gram polynomials.  It is restricts the
-  filter length to 2M+1 (with M an integer).
-  
-  GSLL is used for linear algebra computations.  There is no reason
-  for not using [[https://github.com/tpapp/lla][LLA]], except that I have not installed that library on
-  my systems.
+   The coefficients are calculated via LU decomposition of a matrix.
+   
+   I use the discussion [[http://www.wire.tu-bs.de/OLDWEB/mameyer/cmr/savgol.pdf][Section 14.8]] of Numerical Recipes in C (2nd
+   Edition) to develop the code.  GSLL is used for linear algebra
+   computations.  There is no reason for not using [[https://github.com/tpapp/lla][LLA]], except that I
+   have not installed that library on my systems.
 
+** Gram polynomial method
+   The article by Gorry calculates the coefficients exactly (as
+   rationals) using orthogonal Gram polynomials.  It is restricts the
+   filter length to 2M+1 (with M an integer).
+   
+
+* The public interface
+** High level interface
+
+   The filter length is set as /2m+1/.  The filter coefficients are
+   calculated for position /p/, /|p|<m/, The weights are calculated
+   for all /i/ data points, /|i|<m/.
+
+   The filters are also specified by the polynomial order /0<=k<=2m+1/
+   and derivative order /0<=s<=k/.
+   
+   The [[id:chw9htg0i8g0][/Variable/ =*method*=]] controls the calculation method.  It can
+   be set to either the [[id:kl7hohg0i8g0][/Constant/ =+gram+=]] or [[id:84u3rig0i8g0][/Constant/ =+matrix+=]].
+
+   The [[id:kn2akog0i8g0][/Function/ weight]] calculates one filter weight for the /i/-th
+   point, while [[id:86laelh0i8g0][/Function/ filter-coeffs]] returns a list of weights.
+
+   A foreign vector with filer coefficients packaged for convolution
+   can be created via the [[id:0mrbga71i8g0][/Function/ convolution-vector]]
+
+   The high level interface imposes the restriction that the filter
+   is of odd length.  This makes the interface suitable for both the
+   gram and matrix method.
+
+   Lower level interface removes this restriction, by allowing the
+   user to call matrix method functionality directly.
+
+** Matrix method interface
+   The matrix method specifies the filter length and position in terms
+   of /l/ leading and /r/ trailing points
+   - /l=m+p/
+   - /r=m-p/
+
+     
+   Unlike the Gram polynomial method, the matrix method does not
+   impose the restriction on the filter length being odd.
+
+   The low-level-interface of the matrix method consists of:
+   - [[id:sf2f72z0c8g0][/Function/ matrix-coeffs]] calculates the coefficients using the
+     matrix method
+     
+     
+   Also useful is
+   - [[id:0uzae6z0c8g0][/Function/ make-convolution-vector]] packages them into a foreign
+     vector suitable for convolution
+     
+     
+   
+   
 * Reference
   - [[http://www.wire.tu-bs.de/OLDWEB/mameyer/cmr/savgol.pdf][Section 14.8]] of Numerical Recipes in C (2nd Edition)
   - [[http://en.wikipedia.org/wiki/Savitzky%25E2%2580%2593Golay_filter_for_smoothing_and_differentiation][Savitzky-Golay]] Wikipedia entry
@@ -37,31 +91,226 @@
 
 * Dictionary
 
-** /Function/ c-coeffs
+** /Parameter/ =*method*=
+   :PROPERTIES:
+   :ID:       chw9htg0i8g0
+   :END:
+
+*** Value type
+    A symbol
+
+*** Initial value
+    :gram
+
+*** Description
+   *Method* is used to set the default calculation method.  It can be
+   set to either :gram or :matrix.
+
+** /Generic function/ weight-1
+   :PROPERTIES:
+   :ID:       wo543mg0i8g0
+   :END:
+
+*** Syntax:
+    *weight-1* /method i p m k &optional s/ => /result/
+
+*** Arguments and values
+    - /method/ - a symbol
+    - /i/ - an integer
+    - /p/ - an integer
+    - /m/ - an integer
+    - /k/ - an integer
+    - /s/ - an integer.  The default is 0
+    - /result/ - an integer
+
+*** Description
+    Calculate weight of the I-th data point for smoothing or
+    derivative calculation at the P-th point.  The weight is
+    calcualted for the S-th derivative of polynomial of order k over
+    2M+1 points.
+
+    METHOD, either :gram or :matrix, determines which algorithm is
+    used to calculate the weight.
+
+    All arguments are integers satisfying:
+    - |P| <= M
+    - |I| <= M
+    - M > 0
+    - K >= 0
+    - S >= 0.  The default is 0
+
+      
+    The routine does not perform argument checks.
+    
+** /Function/ weight
+   :PROPERTIES:
+   :ID:       kn2akog0i8g0
+   :END:
+*** Syntax:
+    *weight* /i p m k &optional s/ => /result/
+
+*** Arguments and values
+    - /i/ - an integer
+    - /p/ - an integer
+    - /m/ - an integer
+    - /k/ - an integer
+    - /s/ - an integer.  The default is 0
+    - /result/ - an integer
+
+*** Description
+    :PROPERTIES:
+    :ID:       4v9bovg0i8g0
+    :END:
+    Calculate weight of the I-th data point for smoothing or
+    derivative calculation at the P-th point.  The weight is
+    calcualted for the S-th derivative of polynomial of order k over
+    2M+1 points.
+
+    The calculation method (Gram polynomial or matrix) is by the value
+    of [[id:chw9htg0i8g0][*method*]].
+
+    All arguments are integers satisfying:
+    - |P| <= M
+    - |I| <= M
+    - M > 0
+    - K >= 0
+    - S >= 0.  The default is 0
+
+      
+    The routine does not perform argument checks.
+    
+** /Generic function/ filter-coeffs-1
+   :PROPERTIES:
+   :ID:       86laelh0i8g0
+   :END:
+
+*** Syntax
+    *filter-coeffs-1* /method p m k &optional s reverse-p/ => /result/
+
+*** Arguments and values
+    - /method/ - a symbol
+    - /p/ - an integer
+    - /m/ - an integer
+    - /k/ - an integer
+    - /s/ - an integer.  The default is 0
+    - /reverse-p/ - a generalized boolean
+    - /result/ - an integer
+
+*** Description
+    :PROPERTIES:
+    :ID:       4v9bovg0i8g0
+    :END:
+    Returns a list of 2M+1 filter coefficients for smoothing or
+    derivative calculation at the P-th point.  The coefficients are
+    calculated for the S-th derivative of polynomial of order k over
+    2M+1 points.
+
+    METHOD, either [[id:kl7hohg0i8g0][+gram+]] or [[id:84u3rig0i8g0][+matrix+]], determines which algorithm is
+    used to calculate the weight.
+
+    If /reverse-p/ is T, the filters are returned in reverse order
+
+    All arguments are integers satisfying:
+    - |P| <= M
+    - M > 0
+    - K >= 0
+    - S >= 0.  The default is 0
+
+      
+    The routine does not perform argument checks.
+    
+** /Function/ filter-coeffs
+   :PROPERTIES:
+   :ID:       86laelh0i8g0
+   :END:
+
+*** Syntax
+    *filter-coeffs* /p m k &optional s reverse-p/ => /result/
+
+*** Arguments and values
+    - /p/ - an integer
+    - /m/ - an integer
+    - /k/ - an integer
+    - /s/ - an integer.  The default is 0
+    - /reverse-p/ - a generalized boolean
+    - /result/ - an integer
+
+*** Description
+    :PROPERTIES:
+    :ID:       4v9bovg0i8g0
+    :END:
+    Returns a list of 2M+1 filter coefficients for smoothing or
+    derivative calculation at the P-th point.  The coefficients are
+    calculated for the S-th derivative of polynomial of order k over
+    2M+1 points.
+
+    The calculation method (Gram polynomial or matrix) is by the value
+    of [[id:chw9htg0i8g0][*method*]].
+
+    If /reverse-p/ is T, the filters are returned in reverse order
+
+    All arguments are integers satisfying:
+    - |P| <= M
+    - M > 0
+    - K >= 0
+    - S >= 0.  The default is 0
+
+      
+    The routine does not perform argument checks.
+    
+** /Function/ matrix-coeffs
    :PROPERTIES:
    :ID:       sf2f72z0c8g0
    :END:
 
 *** Syntax:
-    *c-coeffs* /n-l n-r m &optional l-d reverse/ => /c-coeffs n-c n-r/
+    *matrix-coeffs* /n-l n-r k &optional s reverse/ => /c-coeffs n-c n-r/
 
 *** Arguments and values
     - /n-l/ -- non-negative integer
     - /n-r/ -- non-negative integer
-    - /m/ -- non-negative integer, m >= n-l + n-r
-    - /l-d/ -- non-negative integer, l-d <= m
+    - /k/ -- non-negative integer, k >= n-l + n-r
+    - /s/ -- non-negative integer, s <= k
     - /reverse/ -- generalized boolean, default /T/
     - /c-coeffs/ -- list of Savizsky-Golay coefficients
     - /n-c/ -- non-negative integer, n-c = 1 + n-l + n-r
 
 *** Description
     Return list of Savitzky-Golay filter coefficients for /n-l/
-    leftward (past) points, /n-r/ rightward (future) points.  /m/ is
-    the order of the polynomial, and /l-d/ the derivative order.
+    leftward (past) points, /n-r/ rightward (future) points.  /k/ is
+    the order of the polynomial, and /s/ the derivative order.
+
+    The coefficients are calculated using the matrix method.
 
     If /reverse/ is T, the coefficients are returned in reverse
     order, starting from index /n-r/, /n-r/-1 ,...,1,0,-1,-2,..., -
     /n-l/.
+
+** /Function/ gram-coeffs
+
+*** Syntax
+    *gram-coeffs* /p m k &optional s reverse/ => /coeffs p n-r/
+
+*** Arguments and values
+    - /p/ -- non-negative integer
+    - /m/ -- non-negative integer
+    - /k/ -- non-negative integer, k >= n-l + n-r
+    - /s/ -- non-negative integer, s <= k
+    - /reverse/ -- generalized boolean, default /T/
+    - /c-coeffs/ -- list of Savizsky-Golay coefficients
+    - /n-r/ -- non-negative integer, n-c = 1 + n-l + n-r
+
+*** Description
+    Return list of Savitzky-Golay filter coefficients for smoothing or
+    derivative at point /p/ of a 2 /m/ + 1 sequence.  /k/ is the order of the
+    polynomial, and /s/ the derivative order.
+
+    The coefficients are calculated using the gram method.
+
+    If /reverse/ is T, the coefficients are returned in reverse
+    order.
+
+    /n-r = 2 m + 1 - p/
 
 ** /Function/ make-convolution-vector
 
@@ -95,16 +344,18 @@
     required for padding the data when doing convolutions.
     
 ** /Function/ convolution-vector
+   :PROPERTIES:
+   :ID:       0mrbga71i8g0
+   :END:
 
 *** Syntax:
-    *convolution-vector* /n-p n-p n-l n-r m &optional l-d/ => /foreign-vector/
+    *convolution-vector* /n m k &optional s/ => /foreign-vector/
 
 *** Arguments and values
-    - /n-p/ -- positive integer, /n-p >= n=c/
-    - /n-l/ -- non-negative integer
-    - /n-r/ -- non-negative integer
-    - /m/ -- non-negative integer, m >= n-l + n-r
-    - /l-d/ -- non-negative integer, l-d <= m
+    - /n/ -- positive integer, /n-p >= n=c/
+    - /m/ -- non-negative integer
+    - /k/ -- non-negative integer, k >= n-l + n-r
+    - /s/ -- non-negative integer, s <= k
     - /foreign-vector/ -- A foreign vector of length /n-p/, holding
       double-floats
 

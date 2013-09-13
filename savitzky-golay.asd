@@ -14,6 +14,11 @@
                #:antik
                #:gsll)
   :components ((:file "savitzky-golay-package-def")
-               (:file "savitzky-golay-coeffs")
-	       (:file "gram-poly")))
+	       (:file "common")
+               (:file "matrix")
+	       (:file "gram-poly")
+	       (:file "gram-matrix-tests")
+	       (:file "convolution-vector")))
+
+
 

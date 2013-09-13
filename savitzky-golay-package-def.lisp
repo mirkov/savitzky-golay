@@ -6,11 +6,13 @@
 ;;;; package.lisp
 
 
+
 (defpackage #:savitzky-golay
   (:nicknames :sg :savgol)
   (:use #:cl #:grid #:gsll #:lisp-unit)
   (:shadow :cl :aref)
   (:shadow :lisp-unit :norm)
+  (:shadow :gsll :row :column)
   (:export :c-coeffs
 	   :make-convolution-vector
 	   :convolution-vector)
@@ -23,3 +25,4 @@ package, but to use the package nickname SG.
 Thus, (sg:convolution-vector 10 3 1 2)"))
 
 
+(antik:make-user-package :savitzky-golay)
